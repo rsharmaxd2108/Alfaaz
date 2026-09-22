@@ -22,14 +22,13 @@ php artisan storage:link || true
 
 # Run migrations if database is configured
 if [ -n "$DB_HOST" ] || [ -n "$DATABASE_URL" ]; then
-    echo "Checking database state..."
-    # If users table doesn't exist, run fresh migration (first deploy or broken state)
-    if ! php artisan tinker --execute="try { \DB::select('SELECT 1 FROM users LIMIT 1'); echo 'exists'; } catch(\Exception \$e) { echo 'missing'; }" 2>/dev/null | grep -q "exists"; then
-        echo "Tables missing — running fresh migration..."
-        php artisan migrate:fresh --force || echo "Fresh migration failed; continuing startup."
+    echo "Running database migrations..."
+    # Try normal migrate first; if it fails (broken state), rebuild with migrate:fresh
+    if php artisan migrate --force 2>&1; then
+        echo "Migrations completed successfully."
     else
-        echo "Running incremental migrations..."
-        php artisan migrate --force || echo "Migration skipped or failed; continuing startup."
+        echo "Standard migration failed — running fresh migration..."
+        php artisan migrate:fresh --force || echo "Fresh migration also failed; continuing startup."
     fi
     echo "Running database seeder..."
     php artisan db:seed --force || echo "Seeding skipped or failed; continuing startup."
