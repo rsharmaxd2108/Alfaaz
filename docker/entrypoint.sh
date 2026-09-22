@@ -18,6 +18,8 @@ php artisan storage:link || true
 if [ -n "$DB_HOST" ] || [ -n "$DATABASE_URL" ]; then
     echo "Running database migrations..."
     php artisan migrate --force || echo "Migration skipped or failed; continuing startup."
+    echo "Running database seeder..."
+    php artisan db:seed --force || echo "Seeding skipped or failed; continuing startup."
 fi
 
 # Cache production config and routes if APP_KEY is set
