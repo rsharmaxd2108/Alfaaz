@@ -6,6 +6,9 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
+    /** Neon pooler: disable DDL transaction wrapping */
+    public bool $withinTransaction = false;
+
     /**
      * Run the migrations.
      */
