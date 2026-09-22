@@ -1,0 +1,16 @@
+{
+  "name": "Alfaaz — Words that feel into the heart",
+  "short_name": "Alfaaz",
+  "description": "A sanctuary for Urdu and Hindi poetry, couplets, and timeless verses.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#FCFAF6",
+  "theme_color": "#FCFAF6",
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "64x64 32x32 24x24 16x16",
+      "type": "image/x-icon"
+    }
+  ]
+}
