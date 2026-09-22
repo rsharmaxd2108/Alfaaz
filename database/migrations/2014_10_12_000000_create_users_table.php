@@ -7,12 +7,6 @@ use Illuminate\Support\Facades\Schema;
 return new class extends Migration
 {
     /**
-     * Disable wrapping in a transaction — required for Neon pooled connections
-     * which do not support DDL inside transactions.
-     */
-    public bool $withinTransaction = false;
-
-    /**
      * Run the migrations.
      */
     public function up(): void

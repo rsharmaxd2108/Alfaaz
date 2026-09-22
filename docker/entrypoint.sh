@@ -19,32 +19,26 @@ chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache /var/www/html/p
 # Ensure storage link exists
 php artisan storage:link 2>/dev/null || true
 
-# Run migrations if database is configured
+# Run migrations using Neon's DIRECT connection (pooler blocks DDL in transactions)
 if [ -n "$DB_HOST" ] || [ -n "$DATABASE_URL" ]; then
-    echo "========================================="
-    echo "DATABASE SETUP START"
-    echo "DB_HOST: $DB_HOST"
-    echo "DB_PORT: $DB_PORT"
-    echo "DB_DATABASE: $DB_DATABASE"
-    echo "DB_CONNECTION: $DB_CONNECTION"
-    echo "========================================="
+    POOLER_HOST="$DB_HOST"
+    # Strip -pooler from hostname to get direct connection
+    DIRECT_HOST=$(echo "$DB_HOST" | sed 's/-pooler\././')
+    echo "Switching to direct DB connection for migrations: $DIRECT_HOST"
+    export DB_HOST="$DIRECT_HOST"
 
-    echo "Dropping all tables and running fresh migration with seed..."
-    php artisan migrate:fresh --seed --force -v 2>&1
+    echo "Running fresh migration + seed..."
+    php artisan migrate:fresh --seed --force 2>&1
     MIGRATE_EXIT=$?
-    echo "Migration exit code: $MIGRATE_EXIT"
+
+    # Restore pooler connection for the running app
+    export DB_HOST="$POOLER_HOST"
 
     if [ $MIGRATE_EXIT -ne 0 ]; then
-        echo "!!! MIGRATION FAILED !!!"
-        echo "Checking laravel.log for details..."
-        tail -50 /var/www/html/storage/logs/laravel.log 2>/dev/null || echo "No log file found"
+        echo "!!! MIGRATION FAILED (exit $MIGRATE_EXIT) — app may not work correctly"
     else
         echo "Migration and seeding completed successfully!"
     fi
-
-    echo "========================================="
-    echo "DATABASE SETUP END"
-    echo "========================================="
 fi
 
 # Cache production config and routes if APP_KEY is set
