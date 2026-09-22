@@ -7,7 +7,13 @@ echo "Configuring Nginx to listen on port $PORT..."
 sed -i "s/listen 80;/listen $PORT;/g" /etc/nginx/http.d/default.conf 2>/dev/null || sed -i "s/listen 80;/listen $PORT;/g" /etc/nginx/conf.d/default.conf 2>/dev/null
 
 # Fix storage and public uploads permissions
+mkdir -p /var/www/html/storage/logs
+mkdir -p /var/www/html/storage/framework/sessions
+mkdir -p /var/www/html/storage/framework/views
+mkdir -p /var/www/html/storage/framework/cache/data
+mkdir -p /var/www/html/bootstrap/cache
 mkdir -p /var/www/html/public/uploads/avatars
+touch /var/www/html/storage/logs/laravel.log
 chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache /var/www/html/public/uploads
 chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache /var/www/html/public/uploads
 
@@ -16,8 +22,15 @@ php artisan storage:link || true
 
 # Run migrations if database is configured
 if [ -n "$DB_HOST" ] || [ -n "$DATABASE_URL" ]; then
-    echo "Running database migrations..."
-    php artisan migrate --force || echo "Migration skipped or failed; continuing startup."
+    echo "Checking database state..."
+    # If users table doesn't exist, run fresh migration (first deploy or broken state)
+    if ! php artisan tinker --execute="try { \DB::select('SELECT 1 FROM users LIMIT 1'); echo 'exists'; } catch(\Exception \$e) { echo 'missing'; }" 2>/dev/null | grep -q "exists"; then
+        echo "Tables missing — running fresh migration..."
+        php artisan migrate:fresh --force || echo "Fresh migration failed; continuing startup."
+    else
+        echo "Running incremental migrations..."
+        php artisan migrate --force || echo "Migration skipped or failed; continuing startup."
+    fi
     echo "Running database seeder..."
     php artisan db:seed --force || echo "Seeding skipped or failed; continuing startup."
 fi
